@@ -1,6 +1,8 @@
 from typing import Any, List, Callable, Tuple
 import math
 
+import gymnasium as gym
+
 
 class Node:
     """Monte Carlo Tree Search Node."""
@@ -71,11 +73,36 @@ def expand(node: Node, actions: List[Any]) -> List[Node]:
     return new_nodes
 
 
-def rollout(
-    node: Node, simulate_game: Callable[[Any], Tuple[Any, bool, List[int]]]
-) -> List[int]:
-    """Simulate a game from the given node until the end."""
-    node.state, node.is_terminated, rewards = simulate_game(node.state)
+def rollout(node: Node, env: gym.Env) -> List[float]:
+    """Simulate a game from the given node until the end. If the node is not simulated, simulate the game from the node."""
+    # If the node is a terminal node, return an empty list
+    if node.is_terminal:
+        return []
+
+    rewards = []
+
+    # load the state from the node if it is not None
+    if node.state is not None:
+        env.load_state(node.state)
+    # load the parent's state as the initial state
+    # and run the node since it is not run yet
+    elif node.parent:
+        env.load_state(node.parent.state)
+        # run the node
+        _, reward, terminated, truncated, _ = env.step(node.action)
+        rewards.append(reward)
+        node.is_terminal = terminated or truncated
+        node.state = env.save_state()
+        if node.is_terminal:
+            return rewards
+
+    # run the rest of the game with random actions
+    done = False
+    while not done:
+        _, reward, terminated, truncated, _ = env.step(env.action_space.sample())
+        rewards.append(reward)
+        done = terminated or truncated
+
     return rewards
 
 
