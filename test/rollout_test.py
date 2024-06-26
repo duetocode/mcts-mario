@@ -96,7 +96,7 @@ def test_rollout_with_node_has_state():
     rewards = rollout(root_node, mock_env)
 
     assert (
-        mock_env.load_state.call_args[0][0] == "root_state"
+        mock_env.deserialize.call_args[0][0] == "root_state"
     ), "Environment should load the root state."
     assert rewards == [1, 2], "Rewards should match the simulated values."
     assert root_node.state == "root_state", "Node's state should not be updated."

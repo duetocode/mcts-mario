@@ -10,7 +10,7 @@ class Node:
     def __init__(
         self,
         action: Any = None,
-        state: Any | None = None,
+        state: bytes | None = None,
         parent: "Node" = None,
         children: List["Node"] = [],
         visits: int = 0,
@@ -35,7 +35,7 @@ class Node:
         self.children.append(child)
 
 
-def calculate_ucb1(node: Node, exploration_weight: float = 1.41) -> float:
+def calculate_ucb1(node: Node, exploration_weight: float = 0.2) -> float:
     """Calculate the Upper Confidence Bound 1 (UCB1) value for the given node."""
 
     if node.visits == 0:
@@ -58,14 +58,14 @@ def select(node: Node) -> Node:
     return current_node
 
 
-def expand(node: Node, actions: List[Any]) -> List[Node]:
+def expand(node: Node, num_actions: int) -> List[Node]:
     """Expand the given node by adding all possible child nodes."""
 
     if node.is_terminal:
         return []
 
     new_nodes = []
-    for action in actions:
+    for action in range(num_actions):
         child = Node(action=action)
         node.add(child)
         new_nodes.append(child)
@@ -81,18 +81,24 @@ def rollout(node: Node, env: gym.Env) -> List[float]:
 
     rewards = []
 
+    env.reset()
     # load the state from the node if it is not None
     if node.state is not None:
-        env.load_state(node.state)
+        env.deserialize(node.state)
     # load the parent's state as the initial state
     # and run the node since it is not run yet
     elif node.parent:
-        env.load_state(node.parent.state)
+        env.deserialize(node.parent.state)
         # run the node
-        _, reward, terminated, truncated, _ = env.step(node.action)
+        reward = 0
+        for _ in range(3):
+            _, r, terminated, truncated, _ = env.step(node.action)
+            reward += r
+            if terminated or truncated:
+                break
         rewards.append(reward)
         node.is_terminal = terminated or truncated
-        node.state = env.save_state()
+        node.state = env.serialize()
         if node.is_terminal:
             return rewards
 
@@ -100,8 +106,8 @@ def rollout(node: Node, env: gym.Env) -> List[float]:
     done = False
     while not done:
         _, reward, terminated, truncated, _ = env.step(env.action_space.sample())
-        rewards.append(reward)
         done = terminated or truncated
+        rewards.append(reward)
 
     return rewards
 
