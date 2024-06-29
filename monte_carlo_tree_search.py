@@ -35,7 +35,7 @@ class Node:
         self.children.append(child)
 
 
-def calculate_ucb1(node: Node, exploration_weight: float = 0.2) -> float:
+def calculate_ucb1(node: Node, exploration_weight: float = 1.0) -> float:
     """Calculate the Upper Confidence Bound 1 (UCB1) value for the given node."""
 
     if node.visits == 0:
@@ -91,7 +91,7 @@ def rollout(node: Node, env: gym.Env) -> List[float]:
         env.deserialize(node.parent.state)
         # run the node
         reward = 0
-        for _ in range(3):
+        for _ in range(4):
             _, r, terminated, truncated, _ = env.step(node.action)
             reward += r
             if terminated or truncated:

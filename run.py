@@ -7,8 +7,8 @@ from reward import MarioReward
 import multiprocessing as mp
 
 
-def create_env():
-    env = gym.make("SuperMarioBros-1-1-v0", render_mode="human")
+def create_env(headless: bool = False, with_reward: bool = False):
+    env = gym.make("SuperMarioBros-1-1-v0", render_mode="human", headless=headless)
     env = JoypadSpace(env, SIMPLE_MOVEMENT)
     env = MarioReward(env)
 
@@ -28,9 +28,10 @@ def run():
 
         action = agent.act(env, state)
 
-        _, _, terminated, truncated, _ = env.step(action)
-        done = terminated or truncated
-        env.render()
+        for _ in range(4):
+            _, _, terminated, truncated, _ = env.step(action)
+            done = terminated or truncated
+            env.render()
 
 
 if __name__ == "__main__":

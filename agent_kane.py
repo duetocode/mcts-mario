@@ -1,5 +1,4 @@
 from typing import Any, Callable, List, Tuple
-import os
 import gymnasium as gym
 from monte_carlo_tree_search import Node, select, expand, rollout, backpropagate
 import time
@@ -8,9 +7,9 @@ from multiprocessing import Pool
 _simulation_env = None
 
 
-def _initialize_env(env_provider: Callable[[], gym.Env]):
+def _initialize_env(env_provider: Callable[[bool], gym.Env]):
     global _simulation_env
-    _simulation_env = env_provider()
+    _simulation_env = env_provider(headless=True, with_reward=True)
 
 
 def _rollout(node: Node) -> Tuple[bytes, bool, List[float]]:
@@ -34,7 +33,6 @@ class AgentKane:
 
     def __init__(self, env_provider: Callable[[], gym.Env]):
         self._env_provider = env_provider
-        self._previous_decision = None
         self._pool = Pool(initializer=_initialize_env, initargs=[env_provider])
 
     def act(self, env: gym.Env, observation: Any):
@@ -67,11 +65,12 @@ class AgentKane:
                 node.is_terminal = is_terminated
                 backpropagate(node, rewards)
 
+        # display the network
         # select the best action
         decision = max(root_node.children, key=lambda x: x.value / max(1, x.visits))
-        print(f"Decision: {decision.action} in {time.time() - t} seconds")
-
-        # choose the best path for the next iteration
+        print(
+            f"Decision: {decision.action} in {root_node.value} - {time.time() - t} seconds"
+        )
 
         return decision.action
 
