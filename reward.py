@@ -10,7 +10,7 @@ class MarioReward(Wrapper):
         self,
         env: SuperMarioBrosEnv,
         terminate_on_stuck: bool = True,
-        queue_length: int = 30,
+        queue_length: int = 15,
     ):
         super().__init__(env)
         self.terminate_on_stuck = terminate_on_stuck
@@ -41,10 +41,10 @@ class MarioReward(Wrapper):
             self._x_displacements.append(info["x_pos"] - self._last_x_position)
             if (
                 len(self._x_displacements) >= self._x_displacements.maxlen
-                and sum(self._x_displacements) / len(self._x_displacements) < 2
+                and sum(self._x_displacements) / len(self._x_displacements) < 30
             ):
                 # stuck detected, terminate the episode and return negative reward
-                return obs, -25, True, truncated, info
+                return obs, -10, True, truncated, info
 
         # get the reward
         reward = self._get_reward(info)
@@ -64,7 +64,7 @@ class MarioReward(Wrapper):
         )
 
         if is_dead:
-            return -25
+            return -36
 
         # x position reward
         x_reward = min(5, max(-5, x_pos - self._last_x_position))

@@ -3,19 +3,37 @@ import math
 
 import gymnasium as gym
 
+action_weights = [
+    # NOOP
+    0.05,
+    # right
+    0.1,
+    # right + A
+    1.0,
+    # right + B
+    0.1,
+    # right + A + B
+    0.3,
+    # A
+    0.1,
+    # left
+    0.05,
+]
+
 
 class Node:
     """Monte Carlo Tree Search Node."""
 
     def __init__(
         self,
-        action: Any = None,
+        action: int = None,
         state: bytes | None = None,
         parent: "Node" = None,
         children: List["Node"] = [],
         visits: int = 0,
         value: float = 0,
         is_terminal: bool = False,
+        is_victory: bool = False,
     ):
         self.action = action
         self.state = state
@@ -24,6 +42,7 @@ class Node:
         self.visits = visits
         self.value = value
         self.is_terminal = is_terminal
+        self.is_victory = is_victory
 
     def is_leaf(self) -> bool:
         """Check if the node is a leaf node."""
@@ -35,7 +54,7 @@ class Node:
         self.children.append(child)
 
 
-def calculate_ucb1(node: Node, exploration_weight: float = 1.0) -> float:
+def calculate_ucb1(node: Node, exploration_weight: float) -> float:
     """Calculate the Upper Confidence Bound 1 (UCB1) value for the given node."""
 
     if node.visits == 0:
@@ -43,19 +62,25 @@ def calculate_ucb1(node: Node, exploration_weight: float = 1.0) -> float:
 
     total_visits = sum(child.visits for child in node.parent.children)
 
-    return node.value / node.visits + exploration_weight * math.sqrt(
+    ucb1_value = node.value / node.visits + exploration_weight * math.sqrt(
         2 * math.log(total_visits) / node.visits
     )
 
+    return ucb1_value * action_weights[node.action]
 
-def select(node: Node) -> Node:
+
+def select(node: Node, exploration_weight: float = 1.0) -> Tuple[Node, int]:
     "Traversal a tree and select the most promising node."
     current_node = node
+    depth = 1
     while not current_node.is_leaf():
         # Select the child node with the highest UCB1 value
-        current_node = max(current_node.children, key=calculate_ucb1)
+        current_node = max(
+            current_node.children, key=lambda n: calculate_ucb1(n, exploration_weight)
+        )
+        depth += 1
 
-    return current_node
+    return current_node, depth
 
 
 def expand(node: Node, num_actions: int) -> List[Node]:
@@ -82,6 +107,7 @@ def rollout(node: Node, env: gym.Env) -> List[float]:
     rewards = []
 
     env.reset()
+
     # load the state from the node if it is not None
     if node.state is not None:
         env.deserialize(node.state)
@@ -92,15 +118,19 @@ def rollout(node: Node, env: gym.Env) -> List[float]:
         # run the node
         reward = 0
         for _ in range(4):
-            _, r, terminated, truncated, _ = env.step(node.action)
+            _, r, terminated, truncated, info = env.step(node.action)
             reward += r
-            if terminated or truncated:
+            if info["flag_get"] == True:
+                node.is_victory = True
+            node.is_terminal = terminated or truncated
+            if node.is_terminal:
                 break
         rewards.append(reward)
-        node.is_terminal = terminated or truncated
         node.state = env.serialize()
         if node.is_terminal:
             return rewards
+    else:
+        raise ValueError("The node is not a terminal node, but it does not have")
 
     # run the rest of the game with random actions
     done = False
