@@ -4,20 +4,14 @@ import math
 import gymnasium as gym
 
 action_weights = [
-    # NOOP
-    0.05,
-    # right
-    0.1,
-    # right + A
-    2.0,
-    # right + B
+    # ["NOOP"],
     0.5,
-    # right + A + B
+    # ["right", "B"],
+    1.5,
+    # ["right", "A", "B"],
+    1.0,
+    # ["left"]
     0.5,
-    # A
-    0.1,
-    # left
-    0.05,
 ]
 
 
@@ -150,7 +144,7 @@ def backpropagate(
     current_node = node
     while current_node is not None:
         current_node.visits += 1
-        current_node.value += cumulative_reward
+        current_node.value += cumulative_reward * reward_discount
         current_node = current_node.parent
 
     return cumulative_reward

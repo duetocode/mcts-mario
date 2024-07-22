@@ -75,14 +75,14 @@ class MarioReward(Wrapper):
         )
 
         if is_dead:
-            return -36
+            return -36 * 4
 
         # x position reward
-        x_reward = min(5, max(-5, x_pos - self._last_x_position))
+        x_reward = min(5, max(-5, x_pos - self._last_x_position)) * 2
         self._last_x_position = max(x_pos, self._last_x_position)
 
         # flag reward
-        flag_reward = 250 if flag_get else 0
+        flag_reward = 500 if flag_get else 0
 
         # time penalty
         time_penalty = max(0, (time - self._last_time))

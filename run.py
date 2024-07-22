@@ -4,7 +4,6 @@ import time
 
 import gymnasium as gym
 
-from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 from nes_py.wrappers import JoypadSpace
 
 from agent_kane import AgentKane
@@ -12,15 +11,22 @@ from reward import MarioReward
 from frame_skipping import FrameSkip
 from game_play_recorder import GamePlayRecorder
 
+FAST_MOVE = [
+    ["NOOP"],
+    ["right", "B"],
+    ["right", "A", "B"],
+    ["left"],
+]
+
 
 def create_env(
-    frame_skip: int = 4,
+    frame_skip: int = 8,
     headless: bool = False,
     with_reward: bool = False,
     render_mode: str = "rgb_array",
 ):
     env = gym.make("SuperMarioBros-4-1-v0", render_mode=render_mode, headless=headless)
-    env = JoypadSpace(env, SIMPLE_MOVEMENT)
+    env = JoypadSpace(env, FAST_MOVE)
 
     if with_reward:
         env = MarioReward(env)
@@ -41,10 +47,10 @@ def run():
     done = False
 
     while not done:
-        action, tree = agent.act(env, state)
         t_0 = time.time()
-        _, reward, terminated, truncated, _ = env.step(action)
+        action, tree = agent.act(env, state)
         t_1 = time.time()
+        _, reward, terminated, truncated, _ = env.step(action)
         env.render()
         recorder.record(
             {

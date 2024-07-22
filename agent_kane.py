@@ -65,10 +65,10 @@ class AgentKane:
         # run the MCTS algorithm loop on the internal simulation environment
         depth = 0
         i = 0
-        while depth < 15 or i < 2:
+        while depth < 8 or i < 2:
             i += 1
             # Selection
-            node, depth = select(root_node, exploration_weight=0.01)
+            node, depth = select(root_node, exploration_weight=0.1)
             # Expansion
             new_nodes = expand(node, env.action_space.n)
 
@@ -84,7 +84,7 @@ class AgentKane:
             nodes = [Node(action=c.action, parent=parent_node) for c in new_nodes]
 
             rollout_results = self._pool.map(_rollout, nodes)
-            print(f"Rollout in {time.time() - t_0:.3f} seconds")
+            print(f"Rollout in {time.time() - t_0:.3f} seconds. Depth: {depth}")
             # Backpropagation
             for node, (state, is_terminated, rewards) in zip(
                 new_nodes, rollout_results

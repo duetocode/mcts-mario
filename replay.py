@@ -4,14 +4,24 @@ import json
 import cv2
 
 
-def replay(saved_gameplay: str):
-    saved_dir = Path(saved_gameplay)
+def replay():
+    # get the latest directory
+    saved_dir = sorted(Path("data").iterdir(), reverse=True)[0]
+    if not saved_dir.exists():
+        raise ValueError("No saved game play found")
+    print(f"Using the latest directory: {saved_dir}")
+
     if not (saved_dir.exists() and saved_dir.is_dir()):
-        raise ValueError(f"{saved_gameplay} is not a valid directory")
+        raise ValueError(f"{saved_dir} is not a valid directory")
 
     # initialize the mp4 video writer
+    video_file = Path(saved_dir, "gameplay.mp4")
     video_writer = cv2.VideoWriter(
-        "gameplay.mp4", cv2.VideoWriter_fourcc(*"mp4v"), 60.0, (256, 240), True
+        str(video_file),
+        cv2.VideoWriter_fourcc(*"mp4v"),
+        60.0,
+        (256, 240),
+        True,
     )
 
     # initialize the environment without frame skipping
@@ -24,7 +34,7 @@ def replay(saved_gameplay: str):
         # read the step data
         step_info = json.loads(Path(saved_dir, f"{index:04d}.json").read_text())
         # run the game with 4 steps
-        for _ in range(4):
+        for _ in range(8):
             # step
             _, _, terminated, truncated, _ = env.step(step_info["action"])
             # render the game
@@ -41,9 +51,10 @@ def replay(saved_gameplay: str):
         index += 1
 
     print(f"Total frames: {frames}")
+    print(str(video_file))
     # finish the game play
     video_writer.release()
 
 
 if __name__ == "__main__":
-    replay("data/2024-07-22T15:36:33.156997")
+    replay()
