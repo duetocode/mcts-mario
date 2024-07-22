@@ -9,11 +9,11 @@ action_weights = [
     # right
     0.1,
     # right + A
-    1.0,
+    2.0,
     # right + B
-    0.1,
+    0.5,
     # right + A + B
-    0.3,
+    0.5,
     # A
     0.1,
     # left

@@ -43,14 +43,14 @@ class AgentKane:
         self._pool = Pool(initializer=_initialize_env, initargs=[env_provider])
         self._previous_node = None
 
-    def act(self, env: gym.Env, observation: Any):
+    def act(self, env: gym.Env, observation: Any) -> Tuple[Any, Any]:
         """Select an action based on the given state"""
         # search for the optimal action
-        action = self._search(env)
+        action, tree = self._search(env)
 
-        return action
+        return action, tree
 
-    def _search(self, env: gym.Env) -> Any:
+    def _search(self, env: gym.Env) -> Tuple[Any, Node]:
         """Perform a Monte Carlo Tree Search from the given state and select the best action."""
         t = time.time()
 
@@ -68,7 +68,7 @@ class AgentKane:
         while depth < 15 or i < 2:
             i += 1
             # Selection
-            node, depth = select(root_node, exploration_weight=0.2)
+            node, depth = select(root_node, exploration_weight=0.01)
             # Expansion
             new_nodes = expand(node, env.action_space.n)
 
@@ -110,7 +110,7 @@ class AgentKane:
         # save the current node
         self._previous_node = decision
 
-        return decision.action
+        return decision.action, root_node
 
 
 class RolloutWorker:

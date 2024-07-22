@@ -1,10 +1,16 @@
+import multiprocessing as mp
+import datetime as dt
+import time
+
 import gymnasium as gym
-from agent_kane import AgentKane
+
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 from nes_py.wrappers import JoypadSpace
-from frame_skipping import FrameSkip
+
+from agent_kane import AgentKane
 from reward import MarioReward
-import multiprocessing as mp
+from frame_skipping import FrameSkip
+from game_play_recorder import GamePlayRecorder
 
 
 def create_env(
@@ -30,13 +36,26 @@ def run():
     state, _ = env.reset()
 
     agent = AgentKane(env_provider=create_env)
+    recorder = GamePlayRecorder(f"data/{dt.datetime.now().isoformat()}")
 
     done = False
 
     while not done:
-        action = agent.act(env, state)
-        _, _, terminated, truncated, _ = env.step(action)
+        action, tree = agent.act(env, state)
+        t_0 = time.time()
+        _, reward, terminated, truncated, _ = env.step(action)
+        t_1 = time.time()
         env.render()
+        recorder.record(
+            {
+                "action": action,
+                "reward": reward,
+                "time": t_1 - t_0,
+            },
+            env.serialize(),
+            tree,
+        )
+
         if terminated or truncated:
             break
 

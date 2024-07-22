@@ -52,7 +52,7 @@ class MarioReward(Wrapper):
             self._x_displacements.append(info["x_pos"] - self._last_x_position)
             if (
                 len(self._x_displacements) >= self._x_displacements.maxlen
-                and sum(self._x_displacements) / len(self._x_displacements) < 30
+                and sum(self._x_displacements) / len(self._x_displacements) < 2
             ):
                 # stuck detected, terminate the episode and return negative reward
                 return obs, -10, True, truncated, info
