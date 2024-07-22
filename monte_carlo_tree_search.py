@@ -116,16 +116,11 @@ def rollout(node: Node, env: gym.Env) -> List[float]:
     elif node.parent:
         env.deserialize(node.parent.state)
         # run the node
-        reward = 0
-        for _ in range(4):
-            _, r, terminated, truncated, info = env.step(node.action)
-            reward += r
-            if info["flag_get"] == True:
-                node.is_victory = True
-            node.is_terminal = terminated or truncated
-            if node.is_terminal:
-                break
+        _, reward, terminated, truncated, info = env.step(node.action)
         rewards.append(reward)
+        if info["flag_get"] == True:
+            node.is_victory = True
+        node.is_terminal = terminated or truncated
         node.state = env.serialize()
         if node.is_terminal:
             return rewards

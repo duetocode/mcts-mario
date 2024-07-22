@@ -1,18 +1,26 @@
 import gymnasium as gym
-import time
 from agent_kane import AgentKane
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 from nes_py.wrappers import JoypadSpace
+from frame_skipping import FrameSkip
 from reward import MarioReward
 import multiprocessing as mp
 
 
-def create_env(headless: bool = False, with_reward=False, render_mode="rgb_array"):
-    env = gym.make("SuperMarioBros-1-1-v0", render_mode=render_mode, headless=headless)
+def create_env(
+    frame_skip: int = 4,
+    headless: bool = False,
+    with_reward: bool = False,
+    render_mode: str = "rgb_array",
+):
+    env = gym.make("SuperMarioBros-4-1-v0", render_mode=render_mode, headless=headless)
     env = JoypadSpace(env, SIMPLE_MOVEMENT)
 
     if with_reward:
         env = MarioReward(env)
+
+    if frame_skip > 0:
+        env = FrameSkip(env, frame_skip)
 
     return env
 
@@ -27,12 +35,10 @@ def run():
 
     while not done:
         action = agent.act(env, state)
-        for _ in range(4):
-            _, _, terminated, truncated, _ = env.step(action)
-            done = terminated or truncated
-            env.render()
-            if done:
-                break
+        _, _, terminated, truncated, _ = env.step(action)
+        env.render()
+        if terminated or truncated:
+            break
 
     env.close()
 

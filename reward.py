@@ -5,6 +5,10 @@ from gymnasium import Wrapper
 
 
 class MarioReward(Wrapper):
+    """
+    A wrapper for the SuperMarioBrosEnv that focuses on speed running, which encourages the agent to sprint forward (right) as fast as possible.
+    It also penalizes death and stuck, which cause early termination.
+    """
 
     def __init__(
         self,
@@ -12,6 +16,13 @@ class MarioReward(Wrapper):
         terminate_on_stuck: bool = True,
         queue_length: int = 15,
     ):
+        """
+        Initialize the wrapper.
+        args:
+            env: The environment to wrap.
+            terminate_on_stuck: If True, the episode will terminate if the agent is stuck.
+            queue_length: The number of frames to keep track of for the stuck detection.
+        """
         super().__init__(env)
         self.terminate_on_stuck = terminate_on_stuck
         self._n_frames = 0
@@ -69,10 +80,6 @@ class MarioReward(Wrapper):
         # x position reward
         x_reward = min(5, max(-5, x_pos - self._last_x_position))
         self._last_x_position = max(x_pos, self._last_x_position)
-
-        # score reward a bit
-        # score_reward = min(1, max(0, score - self._last_score))
-        # self._last_score = score
 
         # flag reward
         flag_reward = 250 if flag_get else 0
