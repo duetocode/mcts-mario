@@ -66,7 +66,7 @@ class AgentKane:
             root_node = self._previous_node
         else:
             # create a new node
-            root_node = Node(state=env.serialize(), action=0, value=0)
+            root_node = Node(state=env.serialize(), action=1, value=0)
 
         # run the MCTS algorithm loop on the internal simulation environment
         depth = 0

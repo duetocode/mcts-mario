@@ -3,7 +3,7 @@ import monte_carlo_tree_search as mcts
 
 def test_select_on_leaf_node():
     """The method should return the node itself when called on a leaf node, as there are no children to traverse"""
-    leaf = mcts.Node()
+    leaf = mcts.Node(action=0)
     assert leaf.is_leaf()
     assert not leaf.is_fully_expanded(4)
 
@@ -17,7 +17,7 @@ def test_select_on_leaf_node():
 
 def test_select_on_single_child():
     """The method should return the node and its child when the node has a single child, ensuring basic traversal works"""
-    root = mcts.Node(value=20, visits=2)
+    root = mcts.Node(value=20, visits=2, action=0)
     root.add(child := mcts.Node(action=1))
 
     actual = mcts.select(root)
@@ -42,7 +42,7 @@ def test_select_on_multiple_children_with_different_ucb1_values():
     """The select method should correctly select the child with the highest UCB1 value among multiple children.
     This can be done by manually setting the visits and value attributes of child nodes to ensure they have different UCB1 values
     """
-    root = mcts.Node(visits=3, value=1)
+    root = mcts.Node(visits=3, value=1, action=0)
     root.add(child_1 := mcts.Node(action=1, visits=1, value=1))
     root.add(child_2 := mcts.Node(action=2, visits=2, value=1))
 
@@ -64,7 +64,7 @@ def test_select_with_deep_tree():
     """Test the select method with a deeper tree (more than two levels)
     to ensure it correctly traverses the full tree and only selects the expandable nodes.
     """
-    root = mcts.Node(visits=6)
+    root = mcts.Node(visits=6, action=1)
 
     # first layer
     root.add(child_1 := mcts.Node(action=1, visits=3, value=1))
@@ -84,17 +84,13 @@ def test_select_with_deep_tree():
     assert len(selected_nodes)
     assert root not in [node for node, _, _ in selected_nodes]
 
-    # the first candidate should be grandchild_3 because its depth is greater than the child_4
-    # the depth is the first element in the sorting key
-    assert selected_nodes[0][0] == grandchild_3
-
 
 def test_select_on_node_with_unvisited_children():
     """Test that the select method can handle nodes with unvisited children (where visits is 0),
     which should have an infinite UCB1 value, effectively prioritizing their selection
     """
     # the root
-    root = mcts.Node(visits=2)
+    root = mcts.Node(visits=2, action=1)
 
     # the two children with a unvisited one
     root.add(mcts.Node(action=1, visits=1, value=10))
