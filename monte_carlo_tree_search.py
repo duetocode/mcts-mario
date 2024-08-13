@@ -1,5 +1,6 @@
 from typing import Any, List, Callable, Tuple
 import math
+from collections import deque
 
 import gymnasium as gym
 
@@ -11,7 +12,7 @@ action_weights = [
     # ["right", "A", "B"],
     1.0,
     # ["left"]
-    0.5,
+    0.1,
 ]
 
 
@@ -47,47 +48,102 @@ class Node:
         child.parent = self
         self.children.append(child)
 
+    def is_fully_expanded(self, action_space: int):
+        """Return True if the node has all possible children."""
+        return len(self.children) == action_space
 
-def calculate_ucb1(node: Node, exploration_weight: float) -> float:
+
+def ucb1(node: Node, exploration_weight: float) -> float:
     """Calculate the Upper Confidence Bound 1 (UCB1) value for the given node."""
 
+    # prioritize the unvisited nodes
     if node.visits == 0:
         return float("inf")
 
-    total_visits = sum(child.visits for child in node.parent.children)
+    # for root node, the total visits is the same as the node's visits
+    if node.parent is None:
+        return node.value / node.visits
 
-    ucb1_value = node.value / node.visits + exploration_weight * math.sqrt(
-        2 * math.log(total_visits) / node.visits
+    # calculate the UCB1 value for regular nodes
+    ucb1_value = node.value / node.visits + math.sqrt(
+        2 * math.log(node.parent.visits) / node.visits
     )
 
     return ucb1_value * action_weights[node.action]
 
 
-def select(node: Node, exploration_weight: float = 1.0) -> Tuple[Node, int]:
-    "Traversal a tree and select the most promising node."
-    current_node = node
-    depth = 1
-    while not current_node.is_leaf():
-        # Select the child node with the highest UCB1 value
-        current_node = max(
-            current_node.children, key=lambda n: calculate_ucb1(n, exploration_weight)
+def select(
+    node: Node,
+    max_candidates: int = 8,
+    exploration_weight: float = 1.0,
+    action_space: int = 4,
+) -> List[Tuple[Node, int, int]]:
+    """Traversal a search tree and select the most promising node.
+    parameters
+    ----------
+    node: Node
+        The root node of the tree.
+    max_candidates: int
+        The max number of selected candidate nodes
+    exploration_weight: float
+        The exploration weight for the UCB1 calculation.
+
+    return
+    ------
+    List[Tuple[Node, int, float]]
+        The list of selected nodes with the depth of the node and their UCB1 score.
+    """
+
+    # 1. collect all nodes that are not fully expanded yet
+    stack = [(node, 0)]
+    candidates = []
+    while stack:
+        current_node, depth = stack.pop()
+        stack.extend(map(lambda n: (n, depth + 1), current_node.children))
+        # add nodes that can expand to the candidates for further short listing
+        if not current_node.is_fully_expanded(action_space):
+            candidates.append((current_node, depth))
+
+    # 2. calculate the ucb1 scores for these nodes
+    candidates = [
+        (
+            node,
+            depth,
+            ucb1(node, exploration_weight),
         )
-        depth += 1
+        for node, depth in candidates
+    ]
+    # sort condidation: depth DESC, ucb1 DESC, then the action weight
+    candidates.sort(
+        # key=lambda x: (x[1], x[2], action_weights[x[0].action] if x[0].action else 0),
+        key=lambda x: (x[2], action_weights[x[0].action]),
+        reverse=True,
+    )
 
-    return current_node, depth
+    # 3. select the best candidates
+    return candidates[:max_candidates]
 
 
-def expand(node: Node, num_actions: int) -> List[Node]:
-    """Expand the given node by adding all possible child nodes."""
-
-    if node.is_terminal:
-        return []
-
+def expand(
+    candidates: List[Tuple[Node, int, float]], num_actions: int, max_expansions: int = 8
+) -> List[Node]:
+    """Expand the given nodes by adding all possible child nodes."""
     new_nodes = []
-    for action in range(num_actions):
-        child = Node(action=action)
-        node.add(child)
-        new_nodes.append(child)
+
+    # continue expand the nodes until the limit is reached or there is no expandable nodes left
+    for node, _, _ in candidates:
+        # ignore the terminal node
+        if node.is_terminal:
+            continue
+        # expand the node
+        for i in range(num_actions):
+            # check with the limitation
+            if len(new_nodes) >= max_expansions:
+                return new_nodes
+            # expand
+            child = Node(action=i)
+            node.add(child)
+            new_nodes.append(child)
 
     return new_nodes
 
@@ -137,14 +193,17 @@ def backpropagate(
     """Update the value of the nodes in the path from the given node to the root."""
     # Firstly, backpropagate the rewards from the terminal node to the node
     cumulative_reward = 0.0
-    for reward in reversed(rewards):
-        cumulative_reward = reward + reward_discount * cumulative_reward
+    for i, reward in enumerate(rewards):
+        cumulative_reward += (reward_discount**i) * reward
 
     # Then, update the value of the nodes in the path from the given node to the root
     current_node = node
+    i = 0
     while current_node is not None:
         current_node.visits += 1
-        current_node.value += cumulative_reward * reward_discount
+        # apply the discounted reward to the node
+        current_node.value += cumulative_reward * (reward_discount**i)
         current_node = current_node.parent
+        i += 1
 
     return cumulative_reward

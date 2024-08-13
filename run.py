@@ -1,13 +1,14 @@
 import multiprocessing as mp
 import datetime as dt
 import time
+import os
 
 import gymnasium as gym
 
 from nes_py.wrappers import JoypadSpace
 
 from agent_kane import AgentKane
-from reward import MarioReward
+from mario_reward import MarioReward
 from frame_skipping import FrameSkip
 from game_play_recorder import GamePlayRecorder
 
@@ -41,7 +42,7 @@ def run():
     env = create_env(render_mode="human")
     state, _ = env.reset()
 
-    agent = AgentKane(env_provider=create_env)
+    agent = AgentKane(env_provider=create_env, num_workers=int(os.cpu_count() * 2))
     recorder = GamePlayRecorder(f"data/{dt.datetime.now().isoformat()}")
 
     done = False
