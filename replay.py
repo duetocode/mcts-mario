@@ -4,12 +4,15 @@ import json
 import cv2
 
 
-def replay():
-    # get the latest directory
-    saved_dir = sorted(Path("data").iterdir(), reverse=True)[0]
-    if not saved_dir.exists():
-        raise ValueError("No saved game play found")
-    print(f"Using the latest directory: {saved_dir}")
+def replay(data_dir: str | None):
+    if data_dir is None:
+        # get the latest directory
+        saved_dir = sorted(Path("data").iterdir(), reverse=True)[0]
+        if not saved_dir.exists():
+            raise ValueError("No saved game play found")
+        print(f"Using the latest directory: {saved_dir}")
+    else:
+        saved_dir = Path(data_dir)
 
     if not (saved_dir.exists() and saved_dir.is_dir()):
         raise ValueError(f"{saved_dir} is not a valid directory")
@@ -54,7 +57,21 @@ def replay():
     print(str(video_file))
     # finish the game play
     video_writer.release()
+    # also save the number of the frames
+    (Path(saved_dir) / "frames.txt").write_text(str(frames))
 
 
 if __name__ == "__main__":
-    replay()
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Render the gameplay data into a video."
+    )
+    parser.add_argument(
+        "data_dir",
+        type=str,
+        nargs="?",
+        help="The directory containing the saved game play data",
+    )
+    args = parser.parse_args()
+    replay(data_dir=args.data_dir)

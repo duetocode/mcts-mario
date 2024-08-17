@@ -72,7 +72,7 @@ class AgentKane:
         depth = 0
         i = 0
         target_depth = 16
-        target_num_nodes = 1200
+        target_num_nodes = 700  # 1200
         measure = MeasureTree()
         measure(root_node)
         num_nodes = measure.num_nodes
@@ -121,7 +121,7 @@ class AgentKane:
             ):
                 node.state = bytes(state)
                 node.is_terminal = is_terminated
-                backpropagate(node, list(rewards))
+                backpropagate(node, list(rewards), reward_discount=0.7)
             del rollout_results
 
         pbar.close()
