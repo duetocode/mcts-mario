@@ -8,51 +8,37 @@ import gymnasium as gym
 from nes_py.wrappers import JoypadSpace
 
 from agent_kane import AgentKane
-from mario_reward import MarioReward
-from frame_skipping import FrameSkip
 from game_play_recorder import GamePlayRecorder
-
-FAST_MOVE = [
-    ["NOOP"],
-    ["right", "B"],
-    ["right", "A", "B"],
-    ["left"],
-]
-
-
-def create_env(
-    frame_skip: int = 8,
-    headless: bool = False,
-    with_reward: bool = False,
-    render_mode: str = "rgb_array",
-):
-    env = gym.make("SuperMarioBros-4-1-v0", render_mode=render_mode, headless=headless)
-    env = JoypadSpace(env, FAST_MOVE)
-
-    if with_reward:
-        env = MarioReward(env)
-
-    if frame_skip > 0:
-        env = FrameSkip(env, frame_skip)
-
-    return env
+from environment import create_env
 
 
 def run():
+    """Run the game."""
+    # Prepare the environment
     env = create_env(render_mode="human")
     state, _ = env.reset()
 
+    # and the environments that will be used for the simulations of the MCTS
     agent = AgentKane(env_provider=create_env, num_workers=int(os.cpu_count() * 2))
+
+    # Record the gameplay steps. These data can be renders to actual game play with the `replay.py`
     recorder = GamePlayRecorder(f"data/{dt.datetime.now().isoformat()}")
 
+    # The game play loop
     done = False
-
     while not done:
+        # make decision based on the observation
         t_0 = time.time()
         action, tree = agent.act(env, state)
         t_1 = time.time()
+
+        # execute the decision
         _, reward, terminated, truncated, _ = env.step(action)
+
+        # render for visualisation
         env.render()
+
+        # recording the information about the step
         recorder.record(
             {
                 "action": action,
@@ -63,9 +49,11 @@ def run():
             tree,
         )
 
+        # check if game is ended
         if terminated or truncated:
             break
 
+    # clean up
     env.close()
 
 

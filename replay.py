@@ -5,6 +5,15 @@ import cv2
 
 
 def replay(data_dir: str | None):
+    """
+    This function replays the recorded gameplay from the given data directory into a mp4 file.
+
+    Parameters
+    ----------
+    data_dir : str | None
+        The directory contains the gameplay data created by the `run.py`
+    """
+    # Check the data directory
     if data_dir is None:
         # get the latest directory
         saved_dir = sorted(Path("data").iterdir(), reverse=True)[0]
